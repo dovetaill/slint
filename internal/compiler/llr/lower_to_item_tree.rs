@@ -288,6 +288,7 @@ fn lower_sub_component(
         layout_info_v: super::Expression::BoolLiteral(false).into(),
         child_of_layout: component.root_element.borrow().child_of_layout,
         grid_layout_input_for_repeated: None,
+        flexbox_layout_item_info_for_repeated: None,
         is_repeated_row: component
             .root_element
             .borrow()
@@ -588,6 +589,23 @@ fn lower_sub_component(
         crate::layout::Orientation::Vertical,
     )
     .into();
+    // For repeated elements in a FlexboxLayout, generate code to read flex properties
+    if sub_component.child_of_layout {
+        let root_elem = &component.root_element;
+        let has_flex_binding =
+            ["flex-grow", "flex-shrink", "flex-basis", "flex-align-self", "flex-order"]
+                .iter()
+                .any(|name| crate::layout::binding_reference(root_elem, name).is_some());
+        if has_flex_binding {
+            sub_component.flexbox_layout_item_info_for_repeated = Some(
+                super::lower_layout_expression::get_flexbox_layout_item_info_for_repeated(
+                    &mut ctx, root_elem,
+                )
+                .into(),
+            );
+        }
+    }
+
     if let Some(grid_layout_cell) = component.root_element.borrow().grid_layout_cell.as_ref() {
         let grid_cell_ref = grid_layout_cell.borrow();
         sub_component.grid_layout_input_for_repeated = Some(
@@ -765,11 +783,11 @@ fn lower_repeated_component(
     let listview = repeated.is_listview.as_ref().map(|lv| {
         let geom = component.root_element.borrow().geometry_props.clone().unwrap();
         ListViewInfo {
-            viewport_y: ctx.map_property_reference(&lv.viewport_y).local().clone(),
-            viewport_height: ctx.map_property_reference(&lv.viewport_height).local().clone(),
-            viewport_width: ctx.map_property_reference(&lv.viewport_width).local().clone(),
-            listview_height: ctx.map_property_reference(&lv.listview_height).local().clone(),
-            listview_width: ctx.map_property_reference(&lv.listview_width).local().clone(),
+            viewport_y: ctx.map_property_reference(&lv.viewport_y),
+            viewport_height: ctx.map_property_reference(&lv.viewport_height),
+            viewport_width: ctx.map_property_reference(&lv.viewport_width),
+            listview_height: ctx.map_property_reference(&lv.listview_height),
+            listview_width: ctx.map_property_reference(&lv.listview_width),
             prop_y: sc.mapping.map_property_reference(&geom.y, ctx.state),
             prop_height: sc.mapping.map_property_reference(&geom.height, ctx.state),
         }

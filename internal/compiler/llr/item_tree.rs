@@ -268,13 +268,13 @@ pub struct Function {
 /// The property references might be either in the parent context, or in the
 /// repeated's component context
 pub struct ListViewInfo {
-    pub viewport_y: LocalMemberReference,
-    pub viewport_height: LocalMemberReference,
-    pub viewport_width: LocalMemberReference,
+    pub viewport_y: MemberReference,
+    pub viewport_height: MemberReference,
+    pub viewport_width: MemberReference,
     /// The ListView's inner visible height (not counting eventual scrollbar)
-    pub listview_height: LocalMemberReference,
+    pub listview_height: MemberReference,
     /// The ListView's inner visible width (not counting eventual scrollbar)
-    pub listview_width: LocalMemberReference,
+    pub listview_width: MemberReference,
 
     // In the repeated component context
     pub prop_y: MemberReference,
@@ -411,6 +411,9 @@ pub struct SubComponent {
     pub layout_info_v: MutExpression,
     pub child_of_layout: bool,
     pub grid_layout_input_for_repeated: Option<MutExpression>,
+    /// Expression that builds a FlexboxLayoutItemInfo for a repeated element in a FlexboxLayout.
+    /// Contains property references to flex-grow, flex-shrink, flex-basis, align-self, order.
+    pub flexbox_layout_item_info_for_repeated: Option<MutExpression>,
     /// True when this is a repeated Row in a GridLayout, meaning layout_item_info
     /// needs to be able to return layout info for individual children
     pub is_repeated_row: bool,
@@ -576,6 +579,9 @@ impl CompilationUnit {
             visitor(&sc.layout_info_h, ctx);
             visitor(&sc.layout_info_v, ctx);
             if let Some(e) = &sc.grid_layout_input_for_repeated {
+                visitor(e, ctx);
+            }
+            if let Some(e) = &sc.flexbox_layout_item_info_for_repeated {
                 visitor(e, ctx);
             }
             for e in sc.accessible_prop.values() {
